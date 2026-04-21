@@ -1,4 +1,4 @@
-from src.profiling import build_sequence_manifest
+from src.data.profiling import build_sequence_manifest
 
 
 CSV_HEADER = (
@@ -51,7 +51,7 @@ def test_build_sequence_manifest_profiles_multiple_s3_sequences():
 
 import json
 
-from src.profiling import write_manifest_outputs
+from src.data.profiling import write_manifest_outputs
 
 
 def test_write_manifest_outputs_serializes_csv_and_json(tmp_path):

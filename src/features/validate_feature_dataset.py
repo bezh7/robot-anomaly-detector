@@ -6,8 +6,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from src.build_window_index import WINDOW_INDEX_COLUMNS
-from src.feature_contract import (
+from src.features.build_window_index import WINDOW_INDEX_COLUMNS
+from src.features.feature_contract import (
     DERIVED_IMU_FEATURES,
     FEATURE_SET_COLUMNS,
     FEATURE_TABLE_COLUMNS,

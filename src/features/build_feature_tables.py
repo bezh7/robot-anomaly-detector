@@ -4,9 +4,9 @@ from pathlib import Path
 
 import pandas as pd
 
-from src.derive_features import GT_CONTEXT_COLUMNS, align_gt_context_to_feature_grid, derive_imu_features
-from src.feature_contract import DEFAULT_TARGET_RATE_HZ, FEATURE_TABLE_COLUMNS
-from src.resample_imu import resample_imu_frame
+from src.features.derive_features import GT_CONTEXT_COLUMNS, align_gt_context_to_feature_grid, derive_imu_features
+from src.features.feature_contract import DEFAULT_TARGET_RATE_HZ, FEATURE_TABLE_COLUMNS
+from src.features.resample_imu import resample_imu_frame
 
 
 def _load_sequence_frame(input_path: Path, *, sequence_name: str) -> pd.DataFrame:
@@ -54,7 +54,7 @@ def build_feature_table(
 
     manifest_record: dict[str, object] = {
         'sequence_name': sequence_name,
-        'feature_table_path': str(output_path),
+        'feature_table_path': f'feature_tables/{sequence_name}.parquet',
         'row_count': int(len(feature_table)),
         'target_rate_hz': int(target_rate_hz),
         'timestamp_start_ns': int(feature_table['timestamp_ns'].iloc[0]),

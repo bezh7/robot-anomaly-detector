@@ -6,7 +6,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from src.cleaning_contract import GT_CANONICAL_COLUMNS, GT_QUATERNION_COLUMNS, IMU_CANONICAL_COLUMNS, UGV_SEQUENCE_NAMES
+from src.data.cleaning_contract import GT_CANONICAL_COLUMNS, GT_QUATERNION_COLUMNS, IMU_CANONICAL_COLUMNS, UGV_SEQUENCE_NAMES
 
 
 def _validate_dataframe_columns(frame: pd.DataFrame, expected_columns: list[str], label: str) -> None:

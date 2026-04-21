@@ -1,4 +1,4 @@
-from src.io_utils import list_s3_prefixes
+from src.common.io_utils import list_s3_prefixes
 
 
 def test_list_s3_prefixes_parses_aws_cli_output():

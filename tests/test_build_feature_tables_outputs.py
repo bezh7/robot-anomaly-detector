@@ -5,8 +5,8 @@ import math
 import numpy as np
 import pandas as pd
 
-from src.feature_contract import FEATURE_TABLE_COLUMNS, GT_CONTEXT_FEATURES, RAW_IMU_FEATURES, DERIVED_IMU_FEATURES
-from src.build_feature_tables import build_feature_table
+from src.features.feature_contract import FEATURE_TABLE_COLUMNS, GT_CONTEXT_FEATURES, RAW_IMU_FEATURES, DERIVED_IMU_FEATURES
+from src.features.build_feature_tables import build_feature_table
 
 
 def _write_clean_imu_parquet(path, *, sequence_name: str) -> None:

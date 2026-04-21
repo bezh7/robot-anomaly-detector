@@ -1,8 +1,8 @@
 import pandas as pd
 
-from src.canonicalize_gt import canonicalize_gt_csv
-from src.canonicalize_imu import canonicalize_imu_csv
-from src.trim_overlap import trim_sequence_overlap
+from src.data.canonicalize_gt import canonicalize_gt_csv
+from src.data.canonicalize_imu import canonicalize_imu_csv
+from src.data.trim_overlap import trim_sequence_overlap
 from tests.cleaning_helpers import write_sample_gt_csv, write_sample_imu_csv
 
 

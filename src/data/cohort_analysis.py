@@ -4,8 +4,8 @@ from io import StringIO
 from statistics import fmean, median, pstdev
 from typing import TextIO
 
-from src.io_utils import Runner, list_s3_prefixes, read_s3_text
-from src.profiling import infer_platform_hint, profile_imu_csv
+from src.common.io_utils import Runner, list_s3_prefixes, read_s3_text
+from src.data.profiling import infer_platform_hint, profile_imu_csv
 
 
 DEFAULT_FEATURE_KEYS = [

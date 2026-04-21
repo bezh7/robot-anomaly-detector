@@ -1,6 +1,6 @@
 import pandas as pd
 
-from src.build_window_index import build_window_index
+from src.features.build_window_index import build_window_index
 
 
 def make_feature_table_with_n_rows(*, sequence_name: str, n_rows: int) -> pd.DataFrame:

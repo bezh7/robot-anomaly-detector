@@ -3,8 +3,8 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from src.feature_contract import FEATURE_SET_COLUMNS, RAW_IMU_FEATURES
-from src.window_dataset import WindowDataset, normalizer_lookup_key
+from src.features.feature_contract import FEATURE_SET_COLUMNS, RAW_IMU_FEATURES
+from src.features.window_dataset import WindowDataset, normalizer_lookup_key
 
 
 def sample_feature_tables_by_sequence() -> dict[str, pd.DataFrame]:

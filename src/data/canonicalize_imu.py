@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from src.cleaning_contract import IMU_CANONICAL_COLUMNS
+from src.data.cleaning_contract import IMU_CANONICAL_COLUMNS
 
 
 RAW_IMU_NUMERIC_COLUMNS = [

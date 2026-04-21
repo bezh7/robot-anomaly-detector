@@ -7,9 +7,9 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from src.build_split_manifests import build_dev_split_manifest
-from src.build_window_index import build_window_index
-from src.feature_contract import (
+from src.features.build_split_manifests import build_dev_split_manifest
+from src.features.build_window_index import build_window_index
+from src.features.feature_contract import (
     DEFAULT_WINDOW_SIZE,
     FEATURE_SET_COLUMNS,
     FEATURE_TABLE_COLUMNS,
@@ -18,8 +18,8 @@ from src.feature_contract import (
     RAW_IMU_FEATURES,
     DERIVED_IMU_FEATURES,
 )
-from src.fit_normalizers import fit_normalizer
-from src.validate_feature_dataset import validate_feature_dataset
+from src.features.fit_normalizers import fit_normalizer
+from src.features.validate_feature_dataset import validate_feature_dataset
 
 
 DEV_SEQUENCES = ['seq_a', 'seq_b', 'seq_c', 'seq_d']

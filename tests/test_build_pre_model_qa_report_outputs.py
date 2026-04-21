@@ -7,11 +7,11 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from src.build_pre_model_qa_report import build_pre_model_qa_report, compute_fold_feature_drift, compute_sequence_feature_stats
-from src.build_split_manifests import build_dev_split_manifest
-from src.build_window_index import build_window_index
-from src.feature_contract import FEATURE_SET_COLUMNS, FEATURE_TABLE_COLUMNS
-from src.fit_normalizers import fit_normalizer
+from src.features.build_pre_model_qa_report import build_pre_model_qa_report, compute_fold_feature_drift, compute_sequence_feature_stats
+from src.features.build_split_manifests import build_dev_split_manifest
+from src.features.build_window_index import build_window_index
+from src.features.feature_contract import FEATURE_SET_COLUMNS, FEATURE_TABLE_COLUMNS
+from src.features.fit_normalizers import fit_normalizer
 
 
 def _make_feature_table(sequence_name: str, *, offset: float, gt_missing_rows: int = 0) -> pd.DataFrame:

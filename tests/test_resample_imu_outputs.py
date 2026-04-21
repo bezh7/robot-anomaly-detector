@@ -3,7 +3,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from src.resample_imu import resample_imu_frame
+from src.features.resample_imu import resample_imu_frame
 
 
 def make_synthetic_imu_frame(*, source_rate_hz: int, duration_s: float, accel_x) -> pd.DataFrame:

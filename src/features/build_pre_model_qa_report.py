@@ -9,13 +9,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from src.feature_contract import (
+from src.features.feature_contract import (
     DERIVED_IMU_FEATURES,
     FEATURE_TABLE_METADATA_COLUMNS,
     GT_CONTEXT_FEATURES,
     RAW_IMU_FEATURES,
 )
-from src.validate_feature_dataset import validate_feature_dataset
+from src.features.validate_feature_dataset import validate_feature_dataset
 
 EPSILON = 1e-12
 PLOT_WINDOW_SECONDS = 5.0

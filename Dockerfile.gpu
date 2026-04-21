@@ -1,0 +1,18 @@
+FROM public.ecr.aws/deep-learning-containers/pytorch-training:2.6.0-gpu-py312-cu126-ubuntu22.04-sagemaker
+
+WORKDIR /app
+
+ENV PIP_NO_CACHE_DIR=1
+ENV PIP_DISABLE_PIP_VERSION_CHECK=1
+ENV PYTHONPATH=/app
+
+COPY requirements-runtime.txt requirements-runtime.txt
+
+RUN pip install -r requirements-runtime.txt
+
+COPY src src
+COPY scripts scripts
+COPY README.md README.md
+
+ENTRYPOINT ["python"]
+CMD ["-m", "src.modeling.run_model_search", "--artifact-root", "artifacts/features", "--output-root", "artifacts/modeling"]

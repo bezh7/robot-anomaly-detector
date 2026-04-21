@@ -1,4 +1,4 @@
-from src.raw_inventory import build_raw_manifest
+from src.data.raw_inventory import build_raw_manifest
 from tests.cleaning_helpers import UGV_SEQUENCE_NAMES
 
 

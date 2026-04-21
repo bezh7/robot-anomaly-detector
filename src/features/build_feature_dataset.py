@@ -5,16 +5,16 @@ from pathlib import Path
 
 import pandas as pd
 
-from src.build_feature_tables import build_feature_table
-from src.build_split_manifests import build_dev_split_manifest
-from src.build_window_index import build_window_index
-from src.feature_contract import (
+from src.features.build_feature_tables import build_feature_table
+from src.features.build_split_manifests import build_dev_split_manifest
+from src.features.build_window_index import build_window_index
+from src.features.feature_contract import (
     DEFAULT_WINDOW_SIZE,
     FEATURE_SET_COLUMNS,
     NORMALIZATION_MODES,
 )
-from src.fit_normalizers import fit_normalizer
-from src.validate_feature_dataset import validate_feature_dataset
+from src.features.fit_normalizers import fit_normalizer
+from src.features.validate_feature_dataset import validate_feature_dataset
 
 RESTORE_CLEAN_ARTIFACTS_COMMAND = (
     'aws s3 sync '
