@@ -1,6 +1,6 @@
 from io import StringIO
 
-from src.profiling import infer_platform_hint, profile_imu_csv, summarize_timestamps
+from src.data.profiling import infer_platform_hint, profile_imu_csv, summarize_timestamps
 
 
 def test_infer_platform_hint_from_sequence_name():

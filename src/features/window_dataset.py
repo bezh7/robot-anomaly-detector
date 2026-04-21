@@ -5,7 +5,7 @@ from typing import Mapping
 import numpy as np
 import pandas as pd
 
-from src.feature_contract import FEATURE_SET_COLUMNS
+from src.features.feature_contract import FEATURE_SET_COLUMNS
 
 
 NormalizerLookupKey = tuple[str, str, str]

@@ -1,4 +1,4 @@
-from src.build_split_manifests import build_dev_split_manifest
+from src.features.build_split_manifests import build_dev_split_manifest
 
 
 def test_build_split_manifest_has_no_leakage_and_exact_phase1_experiments():

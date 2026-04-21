@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from pandas.api.types import is_float_dtype, is_integer_dtype
 
-from src.canonicalize_gt import canonicalize_gt_csv
+from src.data.canonicalize_gt import canonicalize_gt_csv
 from tests.cleaning_helpers import write_sample_gt_csv
 
 

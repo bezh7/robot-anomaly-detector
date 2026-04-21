@@ -8,8 +8,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from src.build_feature_dataset import build_feature_dataset
-from src.feature_contract import DERIVED_IMU_FEATURES, RAW_IMU_FEATURES
+from src.features.build_feature_dataset import build_feature_dataset
+from src.features.feature_contract import DERIVED_IMU_FEATURES, RAW_IMU_FEATURES
 
 
 RESTORE_CLEAN_COMMAND = (
@@ -104,6 +104,7 @@ def test_build_feature_dataset_produces_quality_checked_artifacts_for_fixture_se
     )
 
     feature_table = pd.read_parquet(output_root / 'feature_tables' / 'seq_a.parquet')
+    feature_table_manifest = json.loads((output_root / 'feature_table_manifest.json').read_text())
     split_manifest = json.loads((output_root / 'split_manifest.json').read_text())
     window_index = pd.read_parquet(output_root / 'window_indices' / 'fold_1_train_raw_zscore.parquet')
 
@@ -113,6 +114,8 @@ def test_build_feature_dataset_produces_quality_checked_artifacts_for_fixture_se
     assert np.isfinite(feature_table[RAW_IMU_FEATURES + DERIVED_IMU_FEATURES].to_numpy(dtype=float)).all()
     # The split manifest should encode exactly the agreed four phase-1 experiments.
     assert len(split_manifest['experiments']) == 4
+    # Feature-table manifest paths must be portable across machines once artifacts are synced/restored.
+    assert feature_table_manifest[0]['feature_table_path'] == 'feature_tables/seq_a.parquet'
     # Default training windows must reflect the agreed 3 s / 1 s configuration or training volume drifts silently.
     assert int(window_index['window_size'].iloc[0]) == 150
     assert int(window_index['stride'].iloc[0]) == 50

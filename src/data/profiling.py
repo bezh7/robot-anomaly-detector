@@ -5,7 +5,7 @@ from pathlib import Path
 from statistics import median
 from typing import TextIO
 
-from src.io_utils import Runner, list_s3_prefixes, read_s3_text
+from src.common.io_utils import Runner, list_s3_prefixes, read_s3_text
 
 
 NANOSECONDS_PER_SECOND = 1_000_000_000

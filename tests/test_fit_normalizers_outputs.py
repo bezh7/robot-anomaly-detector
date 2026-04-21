@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from src.fit_normalizers import fit_normalizer
+from src.features.fit_normalizers import fit_normalizer
 
 
 def sample_feature_tables_by_sequence() -> dict[str, pd.DataFrame]:

@@ -5,13 +5,13 @@ import tempfile
 from pathlib import Path
 import subprocess
 
-from src.canonicalize_gt import canonicalize_gt_csv
-from src.canonicalize_imu import canonicalize_imu_csv
-from src.cleaning_contract import IMU_RAW_FILENAME, UGV_SEQUENCE_NAMES
-from src.extract_gt import extract_ground_truth_csv
-from src.raw_inventory import build_raw_manifest_from_local_root, build_raw_manifest_from_s3, write_raw_manifest_outputs
-from src.trim_overlap import trim_sequence_overlap, write_overlap_manifest_outputs
-from src.validate_clean_ugv_dataset import validate_clean_dataset
+from src.data.canonicalize_gt import canonicalize_gt_csv
+from src.data.canonicalize_imu import canonicalize_imu_csv
+from src.data.cleaning_contract import IMU_RAW_FILENAME, UGV_SEQUENCE_NAMES
+from src.data.extract_gt import extract_ground_truth_csv
+from src.data.raw_inventory import build_raw_manifest_from_local_root, build_raw_manifest_from_s3, write_raw_manifest_outputs
+from src.data.trim_overlap import trim_sequence_overlap, write_overlap_manifest_outputs
+from src.data.validate_clean_ugv_dataset import validate_clean_dataset
 
 
 def _copy_s3_file(s3_path: str, destination: Path) -> Path:

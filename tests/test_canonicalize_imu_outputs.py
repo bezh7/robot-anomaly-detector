@@ -1,7 +1,7 @@
 import pandas as pd
 from pandas.api.types import is_float_dtype, is_integer_dtype
 
-from src.canonicalize_imu import canonicalize_imu_csv
+from src.data.canonicalize_imu import canonicalize_imu_csv
 from tests.cleaning_helpers import write_sample_imu_csv
 
 

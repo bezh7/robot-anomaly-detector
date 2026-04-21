@@ -1,4 +1,4 @@
-from src.feature_contract import (
+from src.features.feature_contract import (
     DEFAULT_INFERENCE_STRIDE,
     DEFAULT_TARGET_RATE_HZ,
     DEFAULT_TRAIN_STRIDE,

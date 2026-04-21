@@ -1,6 +1,6 @@
 from io import StringIO
 
-from src.cohort_analysis import compute_motion_signature
+from src.data.cohort_analysis import compute_motion_signature
 
 
 def test_compute_motion_signature_uses_norm_based_features():
@@ -19,7 +19,7 @@ def test_compute_motion_signature_uses_norm_based_features():
     assert signature["gyro_delta_std"] == 0.0
 
 
-from src.cohort_analysis import compare_candidate_to_reference_cohort
+from src.data.cohort_analysis import compare_candidate_to_reference_cohort
 
 
 def test_compare_candidate_to_reference_cohort_flags_close_rc_as_mergeable():
@@ -85,7 +85,7 @@ def test_build_motion_signature_manifest_and_analyze_rc_vs_ugv():
     def runner(command: list[str]) -> str:
         return responses[tuple(command)]
 
-    from src.cohort_analysis import analyze_rc_vs_ugv, build_motion_signature_manifest
+    from src.data.cohort_analysis import analyze_rc_vs_ugv, build_motion_signature_manifest
 
     signatures = build_motion_signature_manifest(
         raw_prefix,

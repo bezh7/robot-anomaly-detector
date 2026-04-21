@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from src.derive_features import align_gt_context_to_feature_grid, derive_imu_features
+from src.features.derive_features import align_gt_context_to_feature_grid, derive_imu_features
 
 
 def make_deterministic_resampled_imu_frame(sample_count: int = 25) -> pd.DataFrame:

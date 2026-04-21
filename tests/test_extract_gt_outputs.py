@@ -1,6 +1,6 @@
 import pandas as pd
 
-from src.extract_gt import extract_ground_truth_csv
+from src.data.extract_gt import extract_ground_truth_csv
 from tests.cleaning_helpers import write_sample_gt_zip
 
 

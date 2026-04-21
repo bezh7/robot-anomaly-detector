@@ -5,8 +5,8 @@ import zipfile
 from pathlib import Path
 import subprocess
 
-from src.cleaning_contract import GROUND_TRUTH_CSV_FILENAME
-from src.io_utils import Runner, default_runner
+from src.data.cleaning_contract import GROUND_TRUTH_CSV_FILENAME
+from src.common.io_utils import Runner, default_runner
 
 
 def extract_ground_truth_csv(gt_zip_path: Path, output_dir: Path) -> Path:

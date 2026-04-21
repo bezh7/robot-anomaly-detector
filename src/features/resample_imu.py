@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from scipy.signal import butter, sosfiltfilt
 
-from src.feature_contract import DEFAULT_TARGET_RATE_HZ
+from src.features.feature_contract import DEFAULT_TARGET_RATE_HZ
 
 
 QUATERNION_COLUMNS = ['q_x', 'q_y', 'q_z', 'q_w']

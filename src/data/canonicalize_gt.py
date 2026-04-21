@@ -5,7 +5,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from src.cleaning_contract import GT_CANONICAL_COLUMNS, GT_QUATERNION_COLUMNS
+from src.data.cleaning_contract import GT_CANONICAL_COLUMNS, GT_QUATERNION_COLUMNS
 
 
 RAW_GT_NUMERIC_COLUMNS = [
