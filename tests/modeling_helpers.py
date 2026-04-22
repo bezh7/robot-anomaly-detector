@@ -45,7 +45,7 @@ def write_builder_feature_artifacts(root: Path) -> Path:
     )
 
 
-def write_minimal_feature_artifacts(root: Path) -> Path:
+def write_minimal_feature_artifacts(root: Path, *, sequence_rows: int = 220) -> Path:
     artifact_root = root / "features"
     feature_tables_dir = artifact_root / "feature_tables"
     normalizers_dir = artifact_root / "normalizers"
@@ -54,7 +54,6 @@ def write_minimal_feature_artifacts(root: Path) -> Path:
     normalizers_dir.mkdir(parents=True, exist_ok=True)
     window_indices_dir.mkdir(parents=True, exist_ok=True)
 
-    sequence_rows = 220
     sequences = {
         "final_challenge_ugv1": _build_sequence_frame(sequence_rows, offset=0.0, sequence_name="final_challenge_ugv1"),
         "final_challenge_ugv3": _build_sequence_frame(sequence_rows, offset=10.0, sequence_name="final_challenge_ugv3"),

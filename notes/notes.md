@@ -126,3 +126,65 @@ Current status:
 - Remaining work is demo-oriented:
   - held-out/demo replay validation
   - lightweight browser-based visualization
+
+Replay dashboard direction:
+- Build a replay-first localhost dashboard against local artifacts
+- Keep it final-model-only and intentionally plain
+- Recompute replay scores in memory rather than exporting a dedicated replay timeline file
+- Include a simple play mode for recorded demo walkthroughs
+
+## Replay Demo Preparation
+
+Real replay artifact source:
+- Real clean and feature artifacts live in `s3://robot-anomaly-detector-data/workspaces/surabaya-v1/artifacts/...`
+- The previous dashboard was accidentally pointed at the fixture bucket `robot-anomaly-detector-628161515461-us-east-1-20260421`, which only contains `seq_a`-`seq_d` 4-second fixtures
+
+Held-out run:
+- Held-out/demo run is `final_challenge_ugv2`
+- Real dev feature tables restored locally under `artifacts/replay_features_real`
+- Held-out clean overlap pair restored locally under `artifacts/demo_clean/overlap`
+
+Demo replay plan:
+- Build a held-out feature table for `final_challenge_ugv2` into the real replay feature root
+- Fit replay normalization from the 4 dev sequences listed in the real `split_manifest.json`, excluding the held-out run
+- Use two replay modes:
+  - `clean`
+  - `demo` with a fixed multi-anomaly schedule
+- Demo anomaly schedule is intentionally non-overlapping and group-attributable:
+  - `gyro_bias_drift`
+  - `accel_freeze`
+  - `clipping`
+- Playback should advance at the model cadence: `10 Hz` (`100 ms` per update)
+
+Held-out replay stats:
+- Held-out source sequence: `final_challenge_ugv2`
+- Local replay feature root: `artifacts/replay_features_real`
+- Held-out feature table row count: `171228`
+- Held-out replay duration: `3424.54 s` (~`57.1 min`)
+- Model score timeline length at `10 Hz` cadence: `34216` updates
+
+Replay precompute behavior:
+- Full clean timeline on the held-out run is now viable with batched window inference
+- Clean + demo full-run smoke completed successfully in `1:14.30` total on local CPU
+- That implies roughly `~37 s` first-load cost per replay mode before Streamlit cache reuse
+
+Selected LSTM final-model anomaly performance (Stage 3, 4 folds × 3 seeds = 12 evals/type):
+- `gyro_bias_drift`: detection `1.0`, attribution `0.8333`, median TTD `0.58 s`
+- `accel_freeze`: detection `1.0`, attribution `0.9167`, median TTD `0.58 s`
+- `clipping`: detection `1.0`, attribution `1.0`, median TTD `0.18 s`
+- `angular_rate_burst`: detection `1.0`, attribution `1.0`, median TTD `0.18 s`
+- `gyro_bias_step`: detection `1.0`, attribution `1.0`, median TTD `0.08 s`
+- `impact_pulse`: detection `1.0`, attribution `1.0`, median TTD `0.18 s`
+- `vibration_burst`: detection `1.0`, attribution `1.0`, median TTD `0.18 s`
+- `noise_burst`: detection `1.0`, attribution is intentionally undefined (`mixed` target group), median TTD `0.18 s`
+
+Interpretation for the demo:
+- The model does handle non-spiky anomalies well enough for the replay demo.
+- Drift and freeze are detected reliably, but they are slower and slightly weaker on attribution than the obvious pulse/burst cases.
+- Current attribution remains group-level (`quaternion`, `gyro`, `accel`) from reconstruction residual energy, not per-channel blame.
+
+Metric semantics:
+- These metrics come from the synthetic injection benchmark, not naturally labeled incidents in the real dataset.
+- `detection_rate` means the model raised an alert within the injected event interval plus the evaluator grace period.
+- `attribution` means the predicted top residual group on the first alerting window matched the injected target group.
+- `median_ttd` means time from injected anomaly start to the first alerting window that satisfied the persistence rule.

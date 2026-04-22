@@ -112,7 +112,15 @@ def _resolve_feature_table_path(artifact_root: Path, entry: dict) -> Path:
     table_path = Path(entry["feature_table_path"])
     if table_path.is_absolute():
         return table_path
-    return artifact_root / table_path
+    candidate = artifact_root / table_path
+    if candidate.exists():
+        return candidate
+    if "feature_tables" in table_path.parts:
+        feature_tables_index = table_path.parts.index("feature_tables")
+        normalized = artifact_root / Path(*table_path.parts[feature_tables_index:])
+        if normalized.exists():
+            return normalized
+    return candidate
 
 
 class ModelingWindowDataset(torch.utils.data.Dataset):

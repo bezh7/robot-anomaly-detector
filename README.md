@@ -1,238 +1,144 @@
-# robot-anomaly-detector
+# robot-anomaly-detector v0.1
 
-## Configuration
+## Project Reflection
 
-Replace the placeholder S3 prefixes below with your own storage locations before
-running the pipeline.
+This project was my attempt to create an anomaly detection and attribution layer for deployed robots. Coming from an academic background, one of my biggest frustrations has always been the gap between working technology and deployable technology. Telemetry and debugging is a critical bottleneck for real robotic deployments and this was my attempt at contributing to the problem.
 
-- Raw dataset prefix: `s3://<bucket>/<raw-prefix>/`
-- Artifact prefix: `s3://<bucket>/<artifact-prefix>/`
+The current state of this project (`v0.1`) is a demo trained on a very small dataset (around 20m of IMU data with no labels or ground truth videos for manual labeling) adapted from the SubT-MRS dataset. The current architecture uses a reconstruction MSE scoring system which was able to capture some anomalies; however, I've run into serious issues in capturing low-frequency anomalies such as sensor drift. Furthermore, this version uses an `LSTM-AE`. Although this architecture performed fine on smoke tests at this scale, it is likely not the final architecture I would use at larger scale, especially for capturing cross-channel dependencies, an important skill for modeling physical systems.
 
-## Restore Clean Artifacts For Feature Builds
+## Data processing and training pipeline + architectural overview
 
-Use this when running `build_feature_dataset` and `artifacts/clean` is missing.
+The project pipeline has four major layers:
 
-```bash
-aws s3 sync s3://<bucket>/<artifact-prefix>/clean artifacts/clean
-```
+1. **Data processing**
+   - restore clean overlap artifacts
+   - build feature tables from IMU and derived features
+   - fit fold-specific normalizers
+   - generate train/validation window indices
 
-The raw downloaded sequence prefix should point at your mirrored dataset root:
-- `s3://<bucket>/<raw-prefix>/`
+2. **Modeling**
+   - train LSTM and TCN autoencoder baselines on leave-one-run-out folds
+   - score validation replay with reconstruction residuals
+   - inject synthetic anomalies into replay windows for controlled evaluation
+   - compute leaderboard metrics across folds and seeds
 
-At the moment, each downloaded sequence contains only `imu_data.csv`, so the first profiling pass is IMU-only.
+3. **Execution**
+   - local Python path for development
+   - CPU Docker path for local reproducibility
+   - GPU Docker + ECR + EC2 launch path for larger search/training runs
 
-### Re-run basic profiling
+4. **Demo / replay**
+   - restore the selected final model
+   - replay the held-out run `final_challenge_ugv2`
+   - visualize anomaly score, threshold, grouped attribution, and injected anomalies
 
-```bash
-python3 - <<'PY'
-from pathlib import Path
-from src.common.io_utils import default_runner
-from src.data.profiling import build_sequence_manifest, write_manifest_outputs
+Architecturally, the final selected model is:
 
-manifest = build_sequence_manifest(
-    's3://<bucket>/<raw-prefix>/',
-    runner=default_runner,
-)
-write_manifest_outputs(manifest, Path('artifacts/profiling'))
-PY
-```
+- `LSTM autoencoder`
+- feature set: `raw_plus_derived`
+- normalization: `zscore`
+- batch size: `64`
+- learning rate: `1e-3`
 
-### Re-run RC-vs-UGV motion analysis
+The model itself outputs a reconstruction of the normalized input window. The detector then computes squared residuals and collapses them into:
 
-```bash
-python3 - <<'PY'
-import csv
-import json
-from pathlib import Path
+- a scalar anomaly score
+- grouped residual scores for:
+  - `quaternion`
+  - `gyro`
+  - `accel`
 
-from src.data.cohort_analysis import analyze_rc_vs_ugv, build_motion_signature_manifest
-from src.common.io_utils import default_runner
+This was enough to support end-to-end training, evaluation, attribution, and replay. It was not enough to robustly capture all subtle anomaly types, which became clear during the held-out replay analysis.
 
-output_dir = Path('artifacts/profiling')
-output_dir.mkdir(parents=True, exist_ok=True)
+Attribution in this version is group-level over `quaternion`, `gyro`, and `accel`, not per-channel root-cause attribution.
 
-signatures = build_motion_signature_manifest(
-    's3://<bucket>/<raw-prefix>/',
-    runner=default_runner,
-)
-report = analyze_rc_vs_ugv(signatures)
+## Performance evaluation
 
-with (output_dir / 'motion_signatures.csv').open('w', newline='') as csv_file:
-    writer = csv.DictWriter(csv_file, fieldnames=list(signatures[0].keys()))
-    writer.writeheader()
-    writer.writerows(signatures)
+Model selection was done in three stages:
 
-(output_dir / 'rc_vs_ugv_analysis.json').write_text(json.dumps(report, indent=2))
-PY
-```
+- **Stage 1:** representative-fold search on `fold_2` and `fold_4`
+- **Stage 2:** four-fold finalist evaluation
+- **Stage 3:** repeated-seed stability check on the top two configs
 
-### Outputs
+The key selection outcome was:
 
-Profiling writes:
-- `artifacts/profiling/sequence_manifest.csv`
-- `artifacts/profiling/sequence_manifest.json`
-- `artifacts/profiling/motion_signatures.csv`
-- `artifacts/profiling/rc_vs_ugv_analysis.json`
+- the TCN was the strongest single-seed finalist on the four-fold sweep
+- the LSTM was the most stable across seeds
+- because the dataset is small, I chose stability over the slightly stronger single-seed attribution result
 
-These artifacts summarize:
-- sequence name
-- platform hint inferred from folder name
-- row count and duration
-- estimated sample rate
-- duplicate or non-monotonic timestamps
-- per-column missing-value counts
-- per-sequence IMU motion signatures
-- RC-vs-UGV cohort compatibility
+Final selected model:
 
-## Local Python Environment
+- `lstm / raw_plus_derived / zscore / bs64 / lr1e-3`
 
-For the data and modeling pipelines, create a local virtual environment and
-install the pinned repo dependencies:
+Selected quantitative results from the recorded experiment log:
 
-```bash
-python3 -m venv .venv
-. .venv/bin/activate
-pip install -r requirements.txt
-```
+- **Stage 2 TCN finalist**
+  - detection rate: `1.0`
+  - median time-to-detect: `0.18 s`
+  - clean alerts per minute: `0.0`
+  - group attribution top1: `1.0`
 
-## Local Modeling Search
+- **Stage 3 final LSTM selection**
+  - detection rate: `1.0`
+  - median time-to-detect: `0.18 s`
+  - clean alerts per minute: `0.0`
+  - group attribution top1: `0.9643`
 
-Run the stage-one search pipeline directly:
+For synthetic anomaly types that matter most to this demo:
 
-```bash
-python -m src.modeling.run_model_search \
-  --artifact-root artifacts/features \
-  --output-root artifacts/modeling \
-  --architectures lstm,tcn \
-  --feature-sets raw,raw_plus_derived \
-  --normalizations zscore,robust \
-  --batch-sizes 32,64,128 \
-  --learning-rates 3e-4,1e-3 \
-  --folds fold_2,fold_4 \
-  --trials-per-architecture 8 \
-  --max-epochs 100 \
-  --seed 7
-```
+- `gyro_bias_drift`
+  - detection `1.0`
+  - attribution `0.8333`
+  - median TTD `0.58 s`
+- `accel_freeze`
+  - detection `1.0`
+  - attribution `0.9167`
+  - median TTD `0.58 s`
+- `clipping`
+  - detection `1.0`
+  - attribution `1.0`
+  - median TTD `0.18 s`
 
-Outputs land under:
+However, the held-out replay demo exposed an important weakness:
 
-- `artifacts/modeling/<experiment_id>/<fold_name>/...`
-- `artifacts/modeling/leaderboard.csv`
-- `artifacts/modeling/leaderboard.json`
-- `artifacts/modeling/experiment_manifest.json`
+- on the real held-out run, the current score/thresholding path produces clustered alert-like regions in accel-dominant parts of the sequence
+- the injected subtle demo anomalies do not reliably trigger alerts
+- clipping increases grouped residuals clearly, but the scalar detection path still suppresses it
+- drift/freeze often barely move the current scalar score at all
 
-## Docker Modeling Search
+So the honest conclusion is:
 
-For local Docker runs, use the CPU image:
+- the full training/evaluation pipeline works
+- the benchmarking loop is useful
+- the current detector is not yet strong enough for subtle anomaly replay on unseen real data
 
-```bash
-scripts/run_model_search_in_docker.sh
-```
+These failures expose important information for future improvements.
 
-This requires a running local Docker daemon.
+## Next steps for `v0.2`
 
-This mounts:
+For the next iteration of this project, I'd like to tackle a much more ambitious scope, modeling full cross-channel dependencies and adjusting the architecture to capture a broader range of anomalies.
 
-- `artifacts/features` into `/app/artifacts/features`
-- `artifacts/modeling` into `/app/artifacts/modeling`
+The first major change I'd like to make is the data collection pipeline. `v0.1` was trained on data adapted from the SubT-MRS dataset. For `v0.2` I'd like to augment this data collection process by generating synthetic data in IsaacSim to create a larger dataset where we can also have more insight into the ground truth of the runs and inject anomalies in a more grounded way.
 
-Extra CLI arguments are forwarded to `python -m src.modeling.run_model_search`.
+Secondly, I’d like to change not only the model architecture, but also the scoring and detection formulation. The main lesson from `v0.1` is that a pooled reconstruction-residual score is too blunt for subtle faults like drift and freeze. For `v0.2`, I would explore:
 
-The CPU container uses:
+- **forecasting-based detectors**
+  - short-horizon prediction error instead of pure reconstruction error
+  - better suited to faults that break temporal evolution rather than instantaneous shape
+- **group-aware / state-aware scoring**
+  - separate scoring for gyro, accel, and orientation-related features
+  - thresholds conditioned on operating regime rather than one global cutoff
+- **change-detection style methods**
+  - cumulative or smoothed detectors that capture small persistent shifts
+- **stronger sequence models**
+  - transformer-style architectures or richer latent-variable models that can model cross-channel structure more explicitly than the current LSTM autoencoder
 
-- `Dockerfile.cpu`
-- `requirements-runtime.txt`
-- a CPU-only PyTorch install from `https://download.pytorch.org/whl/cpu`
+In short, `v0.2` should aim to solve three problems that `v0.1` surfaced clearly:
 
-For GPU-backed Docker hosts such as EC2, build the GPU image instead:
+1. more realistic and scalable data
+2. stronger sequence modeling of physical sensor dependencies
+3. a better anomaly score than pooled reconstruction residuals
 
-```bash
-docker build -f Dockerfile.gpu -t robot-anomaly-detector-modeling-gpu .
-docker run --rm --gpus all \
-  -v "$PWD/artifacts/features:/app/artifacts/features" \
-  -v "$PWD/artifacts/modeling:/app/artifacts/modeling" \
-  robot-anomaly-detector-modeling-gpu \
-  -m src.modeling.run_model_search \
-  --artifact-root artifacts/features \
-  --output-root artifacts/modeling
-```
+## Final Thoughts
 
-The GPU container uses an official AWS Deep Learning Container base image:
-
-- `public.ecr.aws/deep-learning-containers/pytorch-training:2.6.0-gpu-py312-cu126-ubuntu22.04-sagemaker`
-
-The local CPU Docker path is aligned to the same PyTorch major/minor version
-(`2.6.0`). Build `Dockerfile.gpu` on a compatible Linux NVIDIA GPU host. The
-local CPU Docker path is the intended default for Apple Silicon and other
-CPU-only machines.
-
-The GPU image sets `ENTRYPOINT ["python"]`, so GPU `docker run` commands pass
-module arguments directly.
-
-## Publish GPU Image To ECR
-
-For NVIDIA-backed EC2 runs, publish the GPU image first:
-
-```bash
-AWS_REGION=us-east-1 \
-ECR_REPOSITORY_NAME=robot-anomaly-detector \
-IMAGE_TAG=git-$(git rev-parse --short HEAD) \
-bash scripts/publish_gpu_image_to_ecr.sh
-```
-
-This prints the final image URI. Use that image URI in the EC2 launcher commands below.
-
-## EC2 Experiment Job
-
-Launch a one-shot EC2 search/evaluation job using the prebuilt ECR image:
-
-```bash
-python -m src.modeling.launch_ec2_experiment_job \
-  --image-uri <account>.dkr.ecr.<region>.amazonaws.com/robot-anomaly-detector:<tag> \
-  --feature-s3-prefix s3://<bucket>/<artifact-prefix>/features \
-  --modeling-s3-prefix s3://<bucket>/<artifact-prefix>/modeling \
-  --ami-id <ami-id> \
-  --instance-type g4dn.xlarge \
-  --instance-profile-name <instance-profile> \
-  --key-name <key-name> \
-  --security-group-id <sg-id> \
-  --subnet-id <subnet-id>
-```
-
-Use this for:
-
-- stage-one random search
-- stage-two fold evaluation
-- stage-three repeated-seed evaluation
-
-Expected EC2 environment:
-
-- Linux NVIDIA GPU instance such as `g4dn` or `g5`
-- GPU-ready AMI with Docker + NVIDIA runtime already working
-- instance profile with:
-  - ECR pull access
-  - S3 read/write access
-
-## EC2 Final Training Job
-
-Launch a separate one-shot EC2 final-training job after model selection:
-
-```bash
-python -m src.modeling.launch_ec2_final_training_job \
-  --image-uri <account>.dkr.ecr.<region>.amazonaws.com/robot-anomaly-detector:<tag> \
-  --feature-s3-prefix s3://<bucket>/<artifact-prefix>/features \
-  --modeling-s3-prefix s3://<bucket>/<artifact-prefix>/modeling-final \
-  --ami-id <ami-id> \
-  --instance-type g4dn.xlarge \
-  --instance-profile-name <instance-profile> \
-  --key-name <key-name> \
-  --security-group-id <sg-id> \
-  --subnet-id <subnet-id> \
-  --architecture lstm \
-  --feature-set raw \
-  --normalization zscore \
-  --batch-size 64 \
-  --learning-rate 1e-3 \
-  --max-epochs 100 \
-  --seed 7
-```
+I would love to continue working on this problem in the future and will continue to publish updates to this repo as well as potential future blog posts with more in-depth deep dives into the development process, likely on my [substack](https://substack.com/@benzhnng?). Feel free to reach out to bezh@seas.upenn.edu with any questions or comments.
