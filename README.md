@@ -4,7 +4,16 @@
 
 This project was my attempt to create an anomaly detection and attribution layer for deployed robots. Coming from an academic background, one of my biggest frustrations has always been the gap between working technology and deployable technology. Telemetry and debugging is a critical bottleneck for real robotic deployments and this was my attempt at contributing to the problem.
 
-The current state of this project (`v0.1`) is a demo trained on a very small dataset (around 20m of IMU data with no labels or ground truth videos for manual labeling) adapted from the SubT-MRS dataset. The current architecture uses a reconstruction MSE scoring system which was able to capture some anomalies; however, I've run into serious issues in capturing low-frequency anomalies such as sensor drift. Furthermore, this version uses an `LSTM-AE`. Although this architecture performed fine on smoke tests at this scale, it is likely not the final architecture I would use at larger scale, especially for capturing cross-channel dependencies, an important skill for modeling physical systems.
+The current state of this project (`v0.1`) is best understood as a thin-data IMU anomaly-detection demo rather than a robust detector. The training corpus is small, the nominal coverage is narrow, and the provenance of the original robot/platform is not strong enough to support confident claims about generalization across runs or environments.
+
+What `v0.1` does demonstrate well is the full pipeline:
+
+- preprocessing and feature generation
+- fold-based training and replay scoring
+- synthetic anomaly injection
+- replay visualization and debugging
+
+What it does **not** demonstrate is a reliable notion of "normal" robot behavior across domain shift. The current architecture uses a reconstruction-MSE scoring system and is especially weak on low-frequency anomalies such as drift/freeze, which became much clearer during follow-up replay analysis.
 
 ## Data processing and training pipeline + architectural overview
 
@@ -52,67 +61,40 @@ This was enough to support end-to-end training, evaluation, attribution, and rep
 
 Attribution in this version is group-level over `quaternion`, `gyro`, and `accel`, not per-channel root-cause attribution.
 
-## Performance evaluation
+## Current evaluation status
 
-Model selection was done in three stages:
+The most defensible evaluation summary for `v0.1` comes from follow-up analysis on the saved final model and held-out replay. That analysis exposed two major issues:
 
-- **Stage 1:** representative-fold search on `fold_2` and `fold_4`
-- **Stage 2:** four-fold finalist evaluation
-- **Stage 3:** repeated-seed stability check on the top two configs
+- the originally exported final-training artifact was the **last-epoch checkpoint**, not the best-validation checkpoint
+- the detector's alerting behavior on held-out replay is not reliable enough to support the earlier leaderboard-style summary
 
-The key selection outcome was:
+Reproduced training behavior for the selected `lstm / raw_plus_derived / zscore / bs64 / lr1e-3` configuration:
 
-- the TCN was the strongest single-seed finalist on the four-fold sweep
-- the LSTM was the most stable across seeds
-- because the dataset is small, I chose stability over the slightly stronger single-seed attribution result
+- best validation loss occurred at **epoch 3**
+- validation MSE at epoch 3: **0.6961**
+- final epoch-100 training MSE: **0.5658**
+- final epoch-100 validation MSE: **1.0871**
 
-Final selected model:
+This is a strong overfitting signature: the model continues improving on training windows while generalization degrades almost immediately.
 
-- `lstm / raw_plus_derived / zscore / bs64 / lr1e-3`
+![Training vs validation loss for the selected v0.1 LSTM run](_assets/training_loss_curve_v0_1.png)
 
-Selected quantitative results from the recorded experiment log:
+Held-out replay findings:
 
-- **Stage 2 TCN finalist**
-  - detection rate: `1.0`
-  - median time-to-detect: `0.18 s`
-  - clean alerts per minute: `0.0`
-  - group attribution top1: `1.0`
+- with the original global-threshold path, strict held-out injected-anomaly smoke tests on the reproduced epoch-3-equivalent checkpoint produced **0.0 strict detection rate** across the originally evaluated anomaly families
+- several burst-like anomalies still produced clear score lift, which shows that the original thresholding logic was suppressing some real signal rather than the model being completely unresponsive
+- a follow-up adaptive local-baseline trigger recovered a number of obvious burst/pulse/clipping-style anomalies, but it also produced a very large false-positive burden on the held-out replay:
+  - clean held-out replay windows scored: **34,216**
+  - clean held-out replay alert-active windows under the adaptive trigger: **11,811**
+  - clean held-out replay alert onsets under the adaptive trigger: **51**
+- subtle low-frequency faults such as drift/freeze remain poorly captured even after thresholding changes; for those faults, the score often barely moves at all
 
-- **Stage 3 final LSTM selection**
-  - detection rate: `1.0`
-  - median time-to-detect: `0.18 s`
-  - clean alerts per minute: `0.0`
-  - group attribution top1: `0.9643`
+The practical conclusion is:
 
-For synthetic anomaly types that matter most to this demo:
-
-- `gyro_bias_drift`
-  - detection `1.0`
-  - attribution `0.8333`
-  - median TTD `0.58 s`
-- `accel_freeze`
-  - detection `1.0`
-  - attribution `0.9167`
-  - median TTD `0.58 s`
-- `clipping`
-  - detection `1.0`
-  - attribution `1.0`
-  - median TTD `0.18 s`
-
-However, the held-out replay demo exposed an important weakness:
-
-- on the real held-out run, the current score/thresholding path produces clustered alert-like regions in accel-dominant parts of the sequence
-- the injected subtle demo anomalies do not reliably trigger alerts
-- clipping increases grouped residuals clearly, but the scalar detection path still suppresses it
-- drift/freeze often barely move the current scalar score at all
-
-So the honest conclusion is:
-
-- the full training/evaluation pipeline works
-- the benchmarking loop is useful
-- the current detector is not yet strong enough for subtle anomaly replay on unseen real data
-
-These failures expose important information for future improvements.
+- the training and replay pipeline works
+- the current score/threshold formulation is not robust
+- the current dataset is too thin and too weakly specified to support strong claims about general anomaly detection
+- `v0.1` should be treated as a debugging and pipeline prototype, not a reliable deployed detector
 
 ## Next steps for `v0.2`
 

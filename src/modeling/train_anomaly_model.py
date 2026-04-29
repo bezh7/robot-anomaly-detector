@@ -273,6 +273,7 @@ def train_final_experiment(
     criterion = nn.MSELoss()
 
     checkpoint_path = run_dir / "final_checkpoint.pt"
+    best_checkpoint_path = run_dir / "best_final_checkpoint.pt"
     _write_config(
         run_dir=run_dir,
         experiment_id=experiment_id,
@@ -304,13 +305,26 @@ def train_final_experiment(
             criterion=criterion,
             device=device,
         )
-        best_validation_loss = min(best_validation_loss, validation_loss)
+        is_best = validation_loss < best_validation_loss
+        if is_best:
+            best_validation_loss = validation_loss
+            torch.save(
+                {
+                    "model_state_dict": model.state_dict(),
+                    "model_config": model_config,
+                    "architecture": architecture,
+                    "feature_columns": list(feature_columns),
+                    "experiment_id": experiment_id,
+                    "fold_name": "full_dev",
+                },
+                best_checkpoint_path,
+            )
         history_rows.append(
             {
                 "epoch": epoch,
                 "train_loss": train_loss,
                 "validation_loss": validation_loss,
-                "is_best": validation_loss == best_validation_loss,
+                "is_best": is_best,
             }
         )
 
@@ -329,7 +343,7 @@ def train_final_experiment(
     return TrainExperimentResult(
         experiment_id=experiment_id,
         run_dir=run_dir,
-        best_checkpoint_path=checkpoint_path,
+        best_checkpoint_path=best_checkpoint_path if best_checkpoint_path.exists() else checkpoint_path,
         best_validation_loss=best_validation_loss,
     )
 

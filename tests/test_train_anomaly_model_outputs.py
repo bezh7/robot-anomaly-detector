@@ -86,3 +86,5 @@ def test_train_final_experiment_runs_on_feature_builder_artifacts(tmp_path: Path
 
     assert result.best_checkpoint_path.exists()
     assert result.run_dir.name == "full_dev"
+    assert (result.run_dir / "best_final_checkpoint.pt").exists()
+    assert (result.run_dir / "final_checkpoint.pt").exists()
