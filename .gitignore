@@ -5,3 +5,6 @@ docs/plans/
 .pytest_cache/
 __pycache__/
 *.pyc
+analysis/odom_tests/*.csv
+analysis/odom_tests/*.svg
+analysis/odom_tests/*.summary.json

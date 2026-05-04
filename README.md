@@ -102,6 +102,12 @@ For the next iteration of this project, I'd like to tackle a much more ambitious
 
 The first major change I'd like to make is the data collection pipeline. `v0.1` was trained on data adapted from the SubT-MRS dataset. For `v0.2` I'd like to augment this data collection process by generating synthetic data in IsaacSim to create a larger dataset where we can also have more insight into the ground truth of the runs and inject anomalies in a more grounded way.
 
+The current Isaac Sim AWS streaming notes are tracked in
+[`docs/guides/isaac_sim_aws_streaming.md`](docs/guides/isaac_sim_aws_streaming.md).
+The finalized Forklift B robot interface, patched USD, ROS shim, normalized
+odom, and integrated smoke test are documented in
+[`docs/guides/forklift_robot_interface.md`](docs/guides/forklift_robot_interface.md).
+
 Secondly, I’d like to change not only the model architecture, but also the scoring and detection formulation. The main lesson from `v0.1` is that a pooled reconstruction-residual score is too blunt for subtle faults like drift and freeze. For `v0.2`, I would explore:
 
 - **forecasting-based detectors**
